@@ -1,0 +1,8 @@
+<launch>
+    <rosparam file="$(find arm_common)/test/test_can.yaml" command="load" ns="test_can"/>
+    <rosparam file="$(find arm_common)/test/test_hw.yaml" command="load" ns="test_can"/>
+
+    <node name="test_can" pkg="arm_common" type="test_can" respawn="false"
+        clear_params="true"/>
+
+</launch>
