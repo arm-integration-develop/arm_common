@@ -34,7 +34,8 @@ add_library(${PROJECT_NAME}
         src/interface/can_interface/socketcan.cpp
         src/interface/can_interface/can_bus.cpp
         src/tools/can_motor.cpp
-        src/tools/tf_rt_broadcaster.cpp)
+        src/tools/tf_rt_broadcaster.cpp
+        src/tools/old_lp_filter.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
