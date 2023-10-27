@@ -175,8 +175,8 @@ void CanBus::read(ros::Time time)
           act_data.stamp = frame_stamp.stamp;
           act_data.seq++;
           // Low pass filter
-//          act_data.lp_filter->input(act_data.vel);
-//          act_data.vel = act_data.lp_filter->output();
+          act_data.lp_filter->input(act_data.vel);
+          act_data.vel = act_data.lp_filter->output();
           continue;
         }
       }

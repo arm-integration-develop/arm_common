@@ -37,7 +37,6 @@
 
 #include "tools/lp_filter.h"
 #include "tools/ros_param.h"
-
 LowPassFilter::LowPassFilter(ros::NodeHandle& nh)
 {
     nh.param("lp_cutoff_frequency", cutoff_frequency_, -1.);
@@ -111,3 +110,4 @@ void LowPassFilter::reset()
         out_[i] = 0;
     }
 }
+

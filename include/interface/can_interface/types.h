@@ -40,6 +40,7 @@
 #include <ros/ros.h>
 #include <string>
 #include <unordered_map>
+#include <tools/lp_filter.h>
 
 namespace can_interface
 {
@@ -85,6 +86,7 @@ struct ActData
   double pos, vel, effort;
   double cmd_pos, cmd_vel, cmd_effort, cmd_kp, cmd_kd, exe_effort;
   double act_offset;
+  LowPassFilter* lp_filter;
 };
 
 struct CanDataPtr

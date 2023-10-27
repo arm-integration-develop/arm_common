@@ -61,8 +61,7 @@ bool CanMotor::parseActData(XmlRpc::XmlRpcValue& act_datas, ros::NodeHandle& rob
                 ROS_ERROR_STREAM("Actuator " << it->first << " has no associated ID.");
                 continue;
             }
-            double act_offset;
-            act_offset = it->second.hasMember("act_offset")?((double)it->second["act_offset"]):0.;
+            double act_offset = it->second.hasMember("act_offset")?((double)it->second["act_offset"]):0.;
             std::string bus = act_datas[it->first]["bus"], type = act_datas[it->first]["type"];
             int id = static_cast<int>(act_datas[it->first]["id"]);
             // check define of act_coeffs
@@ -78,6 +77,7 @@ bool CanMotor::parseActData(XmlRpc::XmlRpcValue& act_datas, ros::NodeHandle& rob
                 ROS_ERROR_STREAM("Repeat actuator on bus " << bus << " and ID " << id);
                 return false;
             } else {
+                ros::NodeHandle nh = ros::NodeHandle(robot_hw_nh, "actuators/" + it->first);
                 bus_id2act_data_[bus].insert(std::make_pair(id, can_interface::ActData{.name = it->first,
                         .type = type,
                         .stamp = ros::Time::now(),
@@ -96,7 +96,8 @@ bool CanMotor::parseActData(XmlRpc::XmlRpcValue& act_datas, ros::NodeHandle& rob
                         .cmd_vel = 0,
                         .cmd_effort = 0,
                         .exe_effort = 0,
-                        .act_offset = act_offset
+                        .act_offset = act_offset,
+                        .lp_filter = new LowPassFilter(nh)
                 }));
                 }
             }
