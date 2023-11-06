@@ -32,76 +32,47 @@
  *******************************************************************************/
 
 //
-// Created by qiayuan on 12/28/20.
+// Created by qiayuan on 12/22/19.
 //
 
 #pragma once
 
-#include "socketcan.h"
-#include "types.h"
-
-#include <chrono>
-#include <mutex>
-#include <thread>
-
-namespace can_interface
+#include <cmath>
+template <typename T>
+T angularMinus(T a, T b)
 {
-struct CanFrameStamp
+  a = fmod(a, 2.0 * M_PI);
+  b = fmod(b, 2.0 * M_PI);
+
+  T res1 = a - b;
+  T res2 = (a < b) ? (a + 2 * M_PI - b) : (a - 2 * M_PI - b);
+
+  return (std::abs(res1) < std::abs(res2)) ? res1 : res2;
+}
+
+template <typename T>
+T minAbs(T a, T b)
 {
-  can_frame frame;
-  ros::Time stamp;
-};
+  T sign = (a < 0.0) ? -1.0 : 1.0;
+  return sign * fmin(fabs(a), b);
+}
 
-class CanBus
+template <typename T>
+int sgn(T val)
 {
-public:
-  /** \brief
-   * Initialize device at can_device, retry if fail. Set up header of CAN frame.
-   *
-   * \param bus_name Bus's name(example: can0).
-   * \param data_ptr Pointer which point to CAN data.
-   */
-  CanBus(const std::string& bus_name, CanDataPtr data_ptr, int thread_priority);
-  /** \brief Read active data from read_buffer_ to data_ptr_, such as position, velocity, torque and so on. Clear
-   * read_buffer_ after reading.
-   *
-   * \param time ROS time, but it doesn't be used.
-   */
-  void read(ros::Time time);
-  /** \brief Init for some motor.
-   *
-   */
-  void start();
-  /** \brief Close for some motor.
-   *
-   */
-  void close();
-  /** \brief Write commands to can bus.
-   *
-   */
-  void write();
+  return (T(0) < val) - (val < T(0));
+}
 
-  void write(can_frame* frame);
+template <typename T>
+T square(T val)
+{
+  return val * val;
+}
 
-  void test();
-
-  const std::string bus_name_;
-
-private:
-  /** \brief This function will be called when CAN bus receive message. It push frame which received into a vector: read_buffer_.
-   *
-   * @param frame The frame which socketcan receive.
-   */
-  void frameCallback(const can_frame& frame);
-
-  SocketCAN socket_can_;
-  CanDataPtr data_ptr_;
-  std::vector<CanFrameStamp> read_buffer_;
-
-  can_frame rm_frame0_{};  // for id 0x201~0x204
-  can_frame rm_frame1_{};  // for id 0x205~0x208
-
-  mutable std::mutex mutex_;
-};
-
-}  // namespace can_interface
+template <typename T>
+T alpha(T cutoff, double freq)
+{
+  T tau = 1.0 / (2 * M_PI * cutoff);
+  T te = 1.0 / freq;
+  return 1.0 / (1.0 + tau / te);
+}

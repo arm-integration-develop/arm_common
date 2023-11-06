@@ -47,7 +47,7 @@ namespace can_interface
 struct ActCoeff
 {
   double act2pos, act2vel, act2effort, pos2act, vel2act, effort2act, pos_offset, vel_offset, effort_offset, kp2act,
-      kd2act;
+      kd2act, max_out;
 };
 
 typedef enum
