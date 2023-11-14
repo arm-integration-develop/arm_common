@@ -12,10 +12,10 @@ find_package(catkin REQUIRED COMPONENTS
         roscpp
 
         hardware_interface
-        )
+)
 
 catkin_package(
-        INCLUDE_DIRS  include
+        INCLUDE_DIRS include
         LIBRARIES ${PROJECT_NAME}
         CATKIN_DEPENDS roscpp hardware_interface
         DEPENDS
@@ -26,16 +26,9 @@ include_directories(
         ${catkin_INCLUDE_DIRS}
 )
 
-#file(GLOB_RECURSE sources "src/interface/can_interface/*.cpp" "src/tools/*.cpp")
-#
-#add_library(${PROJECT_NAME} SHARED ${sources})
+file(GLOB_RECURSE sources "src/interface/can_interface/*.cpp" "src/tools/*.cpp")
 
-add_library(${PROJECT_NAME}
-        src/interface/can_interface/socketcan.cpp
-        src/interface/can_interface/can_bus.cpp
-        src/tools/can_motor.cpp
-        src/tools/tf_rt_broadcaster.cpp
-        src/tools/lp_filter.cpp)
+add_library(${PROJECT_NAME} SHARED ${sources})
 
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
@@ -43,4 +36,3 @@ add_executable(test_can
         test/test_can.cpp)
 
 target_link_libraries(test_can arm_common ${catkin_LIBRARIES})
-

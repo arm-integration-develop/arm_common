@@ -32,36 +32,47 @@
  *******************************************************************************/
 
 //
-// Created by qiayuan on 5/16/21.
+// Created by qiayuan on 12/22/19.
 //
+
 #pragma once
 
-#include "ros_param.h"
-#include "interface/can_interface/can_bus.h"
-
-namespace can_interface {
-class CanMotor
+#include <cmath>
+template <typename T>
+T angularMinus(T a, T b)
 {
-public:
-    CanMotor() {}
+  a = fmod(a, 2.0 * M_PI);
+  b = fmod(b, 2.0 * M_PI);
 
-    bool init(XmlRpc::XmlRpcValue &act_coeffs,XmlRpc::XmlRpcValue &act_datas, ros::NodeHandle &robot_hw_nh);
+  T res1 = a - b;
+  T res2 = (a < b) ? (a + 2 * M_PI - b) : (a - 2 * M_PI - b);
 
-    bool parseActCoeffs(XmlRpc::XmlRpcValue &act_coeffs);
+  return (std::abs(res1) < std::abs(res2)) ? res1 : res2;
+}
 
-    bool parseActData(XmlRpc::XmlRpcValue &act_datas, ros::NodeHandle &robot_hw_nh);
+template <typename T>
+T minAbs(T a, T b)
+{
+  T sign = (a < 0.0) ? -1.0 : 1.0;
+  return sign * fmin(fabs(a), b);
+}
 
-    bool initCanBus(ros::NodeHandle& robot_hw_nh);
+template <typename T>
+int sgn(T val)
+{
+  return (T(0) < val) - (val < T(0));
+}
 
-    void startMotor();
-    void closeMotor();
-    void testMotor();
-public:
-    //can interface
-    std::vector<CanBus *> can_buses_{};
-    //motor param
-    std::unordered_map<std::string, ActCoeff> type2act_coeffs_{};
-    std::unordered_map<std::string, std::unordered_map<int, ActData>> bus_id2act_data_{};
-};
+template <typename T>
+T square(T val)
+{
+  return val * val;
+}
 
-}  // namespace arm_hw
+template <typename T>
+T alpha(T cutoff, double freq)
+{
+  T tau = 1.0 / (2 * M_PI * cutoff);
+  T te = 1.0 / freq;
+  return 1.0 / (1.0 + tau / te);
+}

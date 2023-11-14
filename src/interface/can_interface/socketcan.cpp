@@ -34,7 +34,7 @@
 //
 // Created by qiayuan on 3/3/21.
 //
-#include "interface/can_interface/socketcan.h"
+#include "arm_common/interface/can_interface/socketcan.h"
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <utility>
@@ -176,4 +176,4 @@ bool SocketCAN::startReceiverThread(int thread_priority)
   return true;
 }
 
-}  // namespace can
+}  // namespace can_interface

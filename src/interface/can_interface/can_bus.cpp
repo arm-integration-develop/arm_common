@@ -34,10 +34,11 @@
 //
 // Created by qiayuan on 12/28/20.
 //
-#include "interface/can_interface/can_bus.h"
+#include "arm_common/interface/can_interface/can_bus.h"
 
 #include <string>
 #include <ros/ros.h>
+#include <arm_common/tools/math_utilities.h>
 
 namespace can_interface
 {
@@ -49,68 +50,83 @@ CanBus::CanBus(const std::string& bus_name, CanDataPtr data_ptr, int thread_prio
     ros::Duration(.5).sleep();
 
   ROS_INFO("Successfully connected to %s.", bus_name.c_str());
+  // Set up CAN package header
+  rm_frame0_.can_id = 0x200;
+  rm_frame0_.can_dlc = 8;
+  rm_frame1_.can_id = 0x1FF;
+  rm_frame1_.can_dlc = 8;
 }
 
-void CanBus::start() {
-    for (auto& item : *data_ptr_.id2act_data_)
+void CanBus::start()
+{
+  for (auto& item : *data_ptr_.id2act_data_)
+  {
+    if (item.second.type.find("dm") != std::string::npos)
     {
-        if (item.second.type.find("dm") != std::string::npos)
+      for (int count = 0; count < 5; ++count)
+      {
+        can_frame frame{};
+        for (int i = 0; i < 7; i++)
         {
-            for (int count = 0; count < 5; ++count)
-            {
-                can_frame frame{};
-                for (int i = 0; i < 7; i++) {
-                    frame.data[i] = 0xFF;
-                }
-                frame.data[7] = 0xFC;
-                frame.can_id = item.first;
-                frame.can_dlc = 8;
-                socket_can_.write(&frame);
-            }
+          frame.data[i] = 0xFF;
         }
+        frame.data[7] = 0xFC;
+        frame.can_id = item.first;
+        frame.can_dlc = 8;
+        socket_can_.write(&frame);
+      }
     }
+  }
 }
 
-void CanBus::close() {
-    for (auto& item : *data_ptr_.id2act_data_)
+void CanBus::close()
+{
+  for (auto& item : *data_ptr_.id2act_data_)
+  {
+    if (item.second.type.find("dm") != std::string::npos)
     {
-        if (item.second.type.find("dm") != std::string::npos)
-        {
-            can_frame frame{};
-            for (int i = 0; i < 7; i++) {
-                frame.data[i] = 0xFF;
-            }
-            frame.data[7] = 0xFD;
-            frame.can_id = item.first;
-            frame.can_dlc = 8;
-            socket_can_.write(&frame);
-        }
+      can_frame frame{};
+      for (int i = 0; i < 7; i++)
+      {
+        frame.data[i] = 0xFF;
+      }
+      frame.data[7] = 0xFD;
+      frame.can_id = item.first;
+      frame.can_dlc = 8;
+      socket_can_.write(&frame);
     }
+  }
 }
 
-void CanBus::test() {
-    for (auto& item : *data_ptr_.id2act_data_)
+void CanBus::test()
+{
+  for (auto& item : *data_ptr_.id2act_data_)
+  {
+    if (item.second.type.find("dm") != std::string::npos)
     {
-        if (item.second.type.find("dm") != std::string::npos)
-        {
-//       test effort
-//            item.second.exe_effort = 1;
+      //       test effort
+      //            item.second.exe_effort = 1;
 
-//       test pos
-//            item.second.cmd_pos = 0.;
-//            item.second.cmd_kp = 1.;
+      //       test pos
+      //            item.second.cmd_pos = 0.;
+      //            item.second.cmd_kp = 1.;
 
-//       test vel
-            float vel = 3;
-            item.second.cmd_vel = vel;
-            item.second.cmd_kd = 1;
-        }
+      //       test vel
+      float vel = 3;
+      item.second.cmd_vel = vel;
+      item.second.cmd_kd = 1;
     }
-    write();
+  }
+  write();
 }
 
 void CanBus::write()
 {
+  bool has_write_frame0 = false, has_write_frame1 = false;
+  // safety first
+  std::fill(std::begin(rm_frame0_.data), std::end(rm_frame0_.data), 0);
+  std::fill(std::begin(rm_frame1_.data), std::end(rm_frame1_.data), 0);
+
   for (auto& item : *data_ptr_.id2act_data_)
   {
     if (item.second.type.find("dm") != std::string::npos)
@@ -134,7 +150,32 @@ void CanBus::write()
       frame.data[7] = tau & 0xFF;
       socket_can_.write(&frame);
     }
+    if (item.second.type.find("rm") != std::string::npos)
+    {
+      if (item.second.halted)
+        continue;
+      const ActCoeff& act_coeff = data_ptr_.type2act_coeffs_->find(item.second.type)->second;
+      int id = item.first - 0x201;
+      double cmd =
+          minAbs(act_coeff.effort2act * item.second.exe_effort, act_coeff.max_out);  // add max_range to act_data
+      if (-1 < id && id < 4)
+      {
+        rm_frame0_.data[2 * id] = static_cast<uint8_t>(static_cast<int16_t>(cmd) >> 8u);
+        rm_frame0_.data[2 * id + 1] = static_cast<uint8_t>(cmd);
+        has_write_frame0 = true;
+      }
+      else if (3 < id && id < 8)
+      {
+        rm_frame1_.data[2 * (id - 4)] = static_cast<uint8_t>(static_cast<int16_t>(cmd) >> 8u);
+        rm_frame1_.data[2 * (id - 4) + 1] = static_cast<uint8_t>(cmd);
+        has_write_frame1 = true;
+      }
+    }
   }
+  if (has_write_frame0)
+    socket_can_.write(&rm_frame0_);
+  if (has_write_frame1)
+    socket_can_.write(&rm_frame1_);
 }
 
 void CanBus::read(ros::Time time)
@@ -158,13 +199,14 @@ void CanBus::read(ros::Time time)
           uint16_t cur = ((frame.data[4] & 0xF) << 8) | frame.data[5];
 
           // Converter raw CAN data to position velocity and effort.
-          act_data.pos = act_coeff.act2pos * static_cast<double>(act_data.q_raw) + act_coeff.pos_offset + act_data.act_offset;
+          act_data.pos =
+              act_coeff.act2pos * static_cast<double>(act_data.q_raw) + act_coeff.pos_offset + act_data.act_offset;
           act_data.vel = act_coeff.act2vel * static_cast<double>(qd) + act_coeff.vel_offset;
           act_data.effort = act_coeff.act2effort * static_cast<double>(cur) + act_coeff.effort_offset;
 
-//          ROS_INFO_STREAM("effort = " << act_data.effort);
-//          ROS_INFO_STREAM("pos = " << act_data.pos);
-//          ROS_INFO_STREAM("vel = " << act_data.vel);
+          //          ROS_INFO_STREAM("effort = " << act_data.effort);
+          //          ROS_INFO_STREAM("pos = " << act_data.pos);
+          //          ROS_INFO_STREAM("vel = " << act_data.vel);
           try
           {  // Duration will be out of dual 32-bit range while motor failure
             act_data.frequency = 1. / (frame_stamp.stamp - act_data.stamp).toSec();
@@ -179,6 +221,49 @@ void CanBus::read(ros::Time time)
           act_data.vel = act_data.lp_filter->output();
           continue;
         }
+      }
+    }
+    // Check if robomaster motor
+    if (data_ptr_.id2act_data_->find(frame.can_id) != data_ptr_.id2act_data_->end())
+    {
+      ActData& act_data = data_ptr_.id2act_data_->find(frame.can_id)->second;
+      if ((frame_stamp.stamp - act_data.stamp).toSec() < 0.0005)
+        continue;
+      const ActCoeff& act_coeff = data_ptr_.type2act_coeffs_->find(act_data.type)->second;
+      if (act_data.type.find("rm") != std::string::npos)
+      {
+        act_data.q_raw = (frame.data[0] << 8u) | frame.data[1];
+        act_data.qd_raw = (frame.data[2] << 8u) | frame.data[3];
+        int16_t cur = (frame.data[4] << 8u) | frame.data[5];
+        act_data.temp = frame.data[6];
+
+        // Multiple circle
+        if (act_data.seq != 0)  // not the first receive
+        {
+          if (act_data.q_raw - act_data.q_last > 4096)
+            act_data.q_circle--;
+          else if (act_data.q_raw - act_data.q_last < -4096)
+            act_data.q_circle++;
+        }
+        try
+        {  // Duration will be out of dual 32-bit range while motor failure
+          act_data.frequency = 1. / (frame_stamp.stamp - act_data.stamp).toSec();
+        }
+        catch (std::runtime_error& ex)
+        {
+        }
+        act_data.stamp = frame_stamp.stamp;
+        act_data.seq++;
+        act_data.q_last = act_data.q_raw;
+        // Converter raw CAN data to position velocity and effort.
+        act_data.pos =
+            act_coeff.act2pos * static_cast<double>(act_data.q_raw + 8191 * act_data.q_circle) + act_data.act_offset;
+        act_data.vel = act_coeff.act2vel * static_cast<double>(act_data.qd_raw);
+        act_data.effort = act_coeff.act2effort * static_cast<double>(cur);
+        // Low pass filter
+        act_data.lp_filter->input(act_data.vel, frame_stamp.stamp);
+        act_data.vel = act_data.lp_filter->output();
+        continue;
       }
     }
     if (frame.can_id != 0x0)
@@ -200,4 +285,4 @@ void CanBus::frameCallback(const can_frame& frame)
   read_buffer_.push_back(can_frame_stamp);
 }
 
-}  // namespace arm_hw
+}  // namespace can_interface

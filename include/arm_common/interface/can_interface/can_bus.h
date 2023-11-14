@@ -69,8 +69,8 @@ public:
    */
   void read(ros::Time time);
   /** \brief Init for some motor.
-  *
-  */
+   *
+   */
   void start();
   /** \brief Close for some motor.
    *
@@ -97,6 +97,9 @@ private:
   SocketCAN socket_can_;
   CanDataPtr data_ptr_;
   std::vector<CanFrameStamp> read_buffer_;
+
+  can_frame rm_frame0_{};  // for id 0x201~0x204
+  can_frame rm_frame1_{};  // for id 0x205~0x208
 
   mutable std::mutex mutex_;
 };
