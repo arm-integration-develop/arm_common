@@ -34,6 +34,8 @@ bool CanMotor::parseActCoeffs(XmlRpc::XmlRpcValue& act_coeffs)
       act_coeff.effort_offset = xmlRpcGetDouble(act_coeffs[it->first], "effort_offset", -7.0);
       act_coeff.kp2act = xmlRpcGetDouble(act_coeffs[it->first], "kp2act", 8.19);
       act_coeff.kd2act = xmlRpcGetDouble(act_coeffs[it->first], "kd2act", 819);
+
+      act_coeff.max_out = xmlRpcGetDouble(act_coeffs[it->first], "max_out", 10000);
       std::string type = it->first;
 
       if (type2act_coeffs_.find(type) == type2act_coeffs_.end())

@@ -163,6 +163,7 @@ void CanBus::write()
         rm_frame0_.data[2 * id] = static_cast<uint8_t>(static_cast<int16_t>(cmd) >> 8u);
         rm_frame0_.data[2 * id + 1] = static_cast<uint8_t>(cmd);
         has_write_frame0 = true;
+
       }
       else if (3 < id && id < 8)
       {
