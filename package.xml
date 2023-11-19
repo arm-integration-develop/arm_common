@@ -1,17 +1,18 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>arm_common</name>
-  <version>0.0.0</version>
-  <description>common tools in programming</description>
-  <maintainer email="2028238109@qq.com">Siyang Liu</maintainer>
+    <name>arm_common</name>
+    <version>0.0.0</version>
+    <description>common tools in programming</description>
+    <maintainer email="2028238109@qq.com">Siyang Liu</maintainer>
 
-  <license>BSD</license>
-  <author email="2028238109@qq.com">Siyang Liu</author>
+    <license>BSD</license>
+    <author email="2028238109@qq.com">Siyang Liu</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>roscpp</depend>
+    <depend>roscpp</depend>
 
-  <depend>hardware_interface</depend>
+    <depend>tf</depend>
+    <depend>hardware_interface</depend>
 
 </package>
