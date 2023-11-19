@@ -10,14 +10,17 @@ add_definitions(-Wall -Werror -Wno-inconsistent-missing-override)
 
 find_package(catkin REQUIRED COMPONENTS
         roscpp
-
+        tf
         hardware_interface
 )
 
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES ${PROJECT_NAME}
-        CATKIN_DEPENDS roscpp hardware_interface
+        CATKIN_DEPENDS
+        roscpp
+        tf
+        hardware_interface
         DEPENDS
 )
 
